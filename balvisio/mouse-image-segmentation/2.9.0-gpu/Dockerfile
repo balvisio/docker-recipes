@@ -9,5 +9,6 @@ RUN git clone https://github.com/balvisio/mlflow.git && \
     git checkout ba/keras-model-save-format && \
     pip install .
 
-RUN pip install art prettytable pillow psutil focal-loss
+RUN pip install art focal-loss pillow prettytable psutil scikit-learn
+
 
