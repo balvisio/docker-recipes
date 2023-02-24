@@ -18,4 +18,22 @@ RUN git clone https://github.com/balvisio/ifeatpro.git && \
     pip install . && \
     popd
 
-RUN pip install biopython==1.79 more-itertools psutil scikit-learn tqdm typeguard
+RUN pip install biopython==1.79 more-itertools psutil scikit-learn \
+    tensorflow-text==2.9.0 tqdm transformers==4.26.1 typeguard
+
+# We install PyTorch CPU version only since the apparently there are
+# compatibility issues with CUDA 11.4
+RUN pip3 install torch torchvision torchaudio \
+    --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Apply the necessary patch to the Transformers library
+COPY transformers.patch /root/
+RUN patch \
+    /usr/local/lib/python3.8/dist-packages/transformers/models/bert/tokenization_bert_tf.py \
+    /root/transformers.patch
+
+# Apply the necessary patch to the tensorflow/text library
+COPY tensorflow_text.patch /root/
+RUN patch \
+    /usr/local/lib/python3.8/dist-packages/tensorflow_text/python/ops/fast_bert_normalizer.py \
+    /root/tensorflow_text.patch
