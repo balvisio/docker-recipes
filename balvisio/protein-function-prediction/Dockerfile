@@ -37,3 +37,6 @@ COPY tensorflow_text.patch /root/
 RUN patch \
     /usr/local/lib/python3.8/dist-packages/tensorflow_text/python/ops/fast_bert_normalizer.py \
     /root/tensorflow_text.patch
+
+# Package for TF memory profiling (not strictly necessary but handy)
+RUN pip install tensorboard_plugin_profile==2.11.1
