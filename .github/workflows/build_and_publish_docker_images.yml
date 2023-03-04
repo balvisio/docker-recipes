@@ -1,0 +1,61 @@
+name: Build and Publish Docker Images
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  # This job fails if it is pushed to a branch that doesn't exist
+  # in origin (i.e. it is being pushed for the first time) since in that case
+  # there is no base commit to compare it to.
+  # Other GitHub Actions with similar functionality such as
+  # https://github.com/marketplace/actions/changed-files
+  # allow to specify 'base_sha' or 'fetch-depth' as input.
+  changes:
+    name: "Changed Docker Recipes"
+    runs-on: ubuntu-latest
+    outputs:
+      changed_file: ${{ steps.files.outputs.added_modified }}
+    steps:
+      - id: files
+        uses: balvisio/get-changed-files@v2.2.0
+        with:
+          filter: "version"
+          format: "json"
+
+  build-containers:
+    needs:
+      - changes
+    runs-on: ubuntu-latest
+    if: needs.changes.outputs.changed_file != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        changed_file: ${{ fromJson(needs.changes.outputs.changed_file) }}
+
+    name: Build ${{ matrix.changed_file }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+      - name: Set Image name and tag
+        run: |
+          IMAGE_PATH="$(dirname $(readlink -f ${{ matrix.changed_file }}))"
+          IMAGE_NAME="$(basename $IMAGE_PATH)"
+          IMAGE_TAG="$(cat ${{ matrix.changed_file }})"
+          echo Building Image "$IMAGE_NAME":"$IMAGE_TAG"
+          echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+      - name: Log in to Docker Hub
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: ${{ env.IMAGE_PATH }}
+          push: true
+          tags: balvisio/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
