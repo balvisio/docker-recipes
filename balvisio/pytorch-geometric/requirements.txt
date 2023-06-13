@@ -1,0 +1,10 @@
+h5py
+jupyter
+matplotlib
+numpy
+pandas
+requests
+scipy
+seaborn
+torchnet
+
